@@ -2,7 +2,7 @@
 
 #define GDBF_VERSION_MAJOR 0
 #define GDBF_VERSION_MINOR 8
-#define GDBF_VERSION_PATCH 2
+#define GDBF_VERSION_PATCH 3
 
 #include <algorithm>
 #include <cassert>
