@@ -3,7 +3,7 @@
 There is a simple plugin system. Make a file called `plugins.cpp` in the source code folder. 
 It will be found automatically, and #included in the compilation of the main translation unit.
 
-gf uses the [Luigi](https://github.com/greg7mdp/gf/blob/main/doc/luigi.md) UI library.
+gdbf uses the [Luigi](https://github.com/greg7mdp/gdbf/blob/main/doc/luigi.md) UI library.
 
 You can register new windows, command and data viewers in a constructor function. For example,
 

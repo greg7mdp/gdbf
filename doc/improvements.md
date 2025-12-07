@@ -1,7 +1,7 @@
-# Improvements Made to [gf](https://github.com/greg7mdp/gf)
+# Improvements Made to [gdbf](https://github.com/greg7mdp/gdbf)
 
 
-This document lists the major improvements made to [gf](https://github.com/greg7mdp/gf) since the initial fork from the [original repository](https://github.com/nakst/gf). 
+This document lists the major improvements made to [gdbf](https://github.com/greg7mdp/gdbf) since the initial fork from the [original repository](https://github.com/nakst/gf). 
 
 ## Table of Contents
 
@@ -22,12 +22,12 @@ This section tracks the implementation status of major features (from GitHub iss
 ### ✅ Implemented Features
 
 #### Configuration and Persistence
-- **`.gf` Directory Management**: Manage `.gf` configuration directory, either in launch directory or one level up if launch directory starts with `build`
-- **Persist Breakpoints**: Breakpoints saved in `.gf/<progname>.ini`
-- **Persist Watches**: Watch expressions saved in `.gf/<progname>.ini`
-- **Persist Executable Launch Parameters**: Program arguments saved in `.gf/<progname>.ini` with up/down arrow keys in executable window to switch between saved configurations
-- **Persist Command History**: Command history saved in `.gf/<progname>.hist`
-- **Persist Layout and Window Size**: Persist layout/window size in `.gf/gf_config.ini` and load if present
+- **`.gdbf` Directory Management**: Manage `.gdbf` configuration directory, either in launch directory or one level up if launch directory starts with `build`
+- **Persist Breakpoints**: Breakpoints saved in `.gdbf/<progname>.ini`
+- **Persist Watches**: Watch expressions saved in `.gdbf/<progname>.ini`
+- **Persist Executable Launch Parameters**: Program arguments saved in `.gdbf/<progname>.ini` with up/down arrow keys in executable window to switch between saved configurations
+- **Persist Command History**: Command history saved in `.gdbf/<progname>.hist`
+- **Persist Layout and Window Size**: Persist layout/window size in `.gdbf/gdbf_config.ini` and load if present
 
 #### Code Architecture
 - **Global Buffer Manager**: Implemented for storing `UICode` files (commit ad0d8b7)
@@ -162,14 +162,14 @@ This section tracks the implementation status of major features (from GitHub iss
 - Avoid duplicate lines in program-specific `.ini` files
 
 ### Program-Specific Configuration
-- Individual `.ini` files per debugged program in `.gf` directory
+- Individual `.ini` files per debugged program in `.gdbf` directory
 - JSON format for program start configuration
 - Automatic save of program arguments at exit
 - Command history per program
 - Breakpoint and watch restoration
 
 ### Project Configuration
-- `.project.gf` file for project-wide settings
+- `.project.gdbf` file for project-wide settings
 - Watched variables saved in project config
 - Breakpoint persistence
 
@@ -187,7 +187,7 @@ This section tracks the implementation status of major features (from GitHub iss
 - `ui.grab_focus_on_breakpoint`: Focus behavior
 
 ### Backward Compatibility
-- Loads `~/.config/gf_config.ini` if present
+- Loads `~/.config/gdbf_config.ini` if present
 - Falls back to `~/.config/gf2_config.ini`
 
 ---

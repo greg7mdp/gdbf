@@ -1,14 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-# Build reproducible gf binary using Docker
+# Build reproducible gdbf binary using Docker
 # Usage: ./.github/tools/build-reproducible.sh [output-dir]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 OUTPUT_DIR="${1:-$REPO_ROOT/build-reproducible}"
 
-echo "Building reproducible gf binary..."
+echo "Building reproducible gdbf binary..."
 echo "Repository root: $REPO_ROOT"
 echo "Output directory: $OUTPUT_DIR"
 
@@ -19,17 +19,17 @@ docker buildx build \
     --file "$REPO_ROOT/.github/tools/reproducible.Dockerfile" \
     --target exporter \
     --output "type=local,dest=$OUTPUT_DIR" \
-    --build-arg "GF_BUILD_JOBS=$(nproc)" \
+    --build-arg "GDBF_BUILD_JOBS=$(nproc)" \
     "$REPO_ROOT"
 
 echo ""
 echo "Build complete!"
-echo "Binary location: $OUTPUT_DIR/gf"
+echo "Binary location: $OUTPUT_DIR/gdbf"
 echo ""
 echo "Binary info:"
-file "$OUTPUT_DIR/gf"
+file "$OUTPUT_DIR/gdbf"
 echo ""
-echo "Size: $(du -h "$OUTPUT_DIR/gf" | cut -f1)"
+echo "Size: $(du -h "$OUTPUT_DIR/gdbf" | cut -f1)"
 echo ""
 echo "Linked libraries:"
-ldd "$OUTPUT_DIR/gf" || true
+ldd "$OUTPUT_DIR/gdbf" || true

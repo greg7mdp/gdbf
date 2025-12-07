@@ -1,14 +1,14 @@
-# Contributing to gf
+# Contributing to gdbf
 
 **[Getting Started](#getting-started)** • **[Project Structure](#project-structure)** • **[Testing](#testing)** • **[Code Style](#code-style)** • **[Architecture](#architecture-guidelines)** • **[Making Changes](#making-changes)** • **[Areas for Contribution](#areas-for-contribution)** • **[Getting Help](#getting-help)**
 
 ---
 
-Thank you for your interest in contributing to gf! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to gdbf! This document provides guidelines and information for contributors.
 
 ## Getting Started
 
-gf is built with:
+gdbf is built with:
 - **Language**: C++23 (requires clang++-18 or g++-13 or higher)
 - **GUI Framework**: Custom [Luigi framework](luigi.md)
 - **Build System**: CMake + Ninja
@@ -39,7 +39,7 @@ cmake --build build
 ## Project Structure
 
 ```
-gf/
+gdbf/
 ├── src/
 │   ├── gf.cpp, gf.hpp          # Main debugger frontend
 │   ├── luigi.cpp, luigi.hpp    # GUI framework
@@ -167,7 +167,7 @@ Key patterns:
 ### Before Submitting
 
 1. **Build and test** - Ensure the code compiles and all tests pass
-2. **Test manually** - Run gf and verify your changes work as expected
+2. **Test manually** - Run gdbf and verify your changes work as expected
 3. **Check for regressions** - Test existing functionality still works
 4. **Follow code style** - Match the existing codebase style
 
@@ -244,9 +244,9 @@ See [luigi.md](luigi.md) and `examples/luigi_example.cpp` for details.
 
 These are header-only or single-file libraries included directly.
 
-## Debugging gf Itself
+## Debugging gdbf Itself
 
-### Using GDB on gf
+### Using GDB on gdbf
 
 ```bash
 # Build with debug symbols
@@ -254,7 +254,7 @@ cmake -Bbuild -DCMAKE_BUILD_TYPE=Debug -GNinja .
 cmake --build build
 
 # Run under GDB
-gdb ./build/gf
+gdb ./build/gdbf
 ```
 
 ### Logging

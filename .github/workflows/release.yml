@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   build-reproducible:
-    name: Build Reproducible gf Binary
+    name: Build Reproducible gdbf Binary
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,7 +24,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build reproducible gf binary
+      - name: Build reproducible gdbf binary
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -32,27 +32,27 @@ jobs:
           target: exporter
           outputs: type=local,dest=./output
           build-args: |
-            GF_BUILD_JOBS=${{ runner.hw.cpu-count }}
+            GDBF_BUILD_JOBS=${{ runner.hw.cpu-count }}
 
       - name: Verify binary
         run: |
           ls -lh output/
-          file output/gf
-          ldd output/gf || true
+          file output/gdbf
+          ldd output/gdbf || true
 
       - name: Create tarball
         run: |
           cd output
-          tar -czf gf-${{ github.ref_name }}-linux-x86_64.tar.gz gf
-          sha256sum gf-${{ github.ref_name }}-linux-x86_64.tar.gz > gf-${{ github.ref_name }}-linux-x86_64.tar.gz.sha256
+          tar -czf gdbf-${{ github.ref_name }}-linux-x86_64.tar.gz gdbf
+          sha256sum gdbf-${{ github.ref_name }}-linux-x86_64.tar.gz > gdbf-${{ github.ref_name }}-linux-x86_64.tar.gz.sha256
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: gf-linux-x86_64
+          name: gdbf-linux-x86_64
           path: |
-            output/gf-${{ github.ref_name }}-linux-x86_64.tar.gz
-            output/gf-${{ github.ref_name }}-linux-x86_64.tar.gz.sha256
+            output/gdbf-${{ github.ref_name }}-linux-x86_64.tar.gz
+            output/gdbf-${{ github.ref_name }}-linux-x86_64.tar.gz.sha256
           compression-level: 0
 
       - name: Upload to Release
@@ -60,8 +60,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            output/gf-${{ github.ref_name }}-linux-x86_64.tar.gz
-            output/gf-${{ github.ref_name }}-linux-x86_64.tar.gz.sha256
+            output/gdbf-${{ github.ref_name }}-linux-x86_64.tar.gz
+            output/gdbf-${{ github.ref_name }}-linux-x86_64.tar.gz.sha256
           tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

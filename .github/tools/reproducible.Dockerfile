@@ -30,26 +30,26 @@ RUN wget https://apt.llvm.org/llvm.sh && \
     ./llvm.sh 18 && \
     rm llvm.sh
 
-ARG _GF_CLANG_VERSION=21.1.4
-ARG _GF_CMAKE_VERSION=3.27.6
+ARG _GDBF_CLANG_VERSION=21.1.4
+ARG _GDBF_CMAKE_VERSION=3.27.6
 
 # Download CMake and LLVM sources
 RUN curl -fsSL -o /cmake.tar.gz \
-    https://github.com/Kitware/CMake/releases/download/v${_GF_CMAKE_VERSION}/cmake-${_GF_CMAKE_VERSION}.tar.gz && \
+    https://github.com/Kitware/CMake/releases/download/v${_GDBF_CMAKE_VERSION}/cmake-${_GDBF_CMAKE_VERSION}.tar.gz && \
     curl -fsSL -o /llvm-project.tar.xz \
-    https://github.com/llvm/llvm-project/releases/download/llvmorg-${_GF_CLANG_VERSION}/llvm-project-${_GF_CLANG_VERSION}.src.tar.xz
+    https://github.com/llvm/llvm-project/releases/download/llvmorg-${_GDBF_CLANG_VERSION}/llvm-project-${_GDBF_CLANG_VERSION}.src.tar.xz
 
 # Build and install CMake
 RUN tar xf /cmake.tar.gz && \
-    cd cmake-${_GF_CMAKE_VERSION} && \
-    echo 'set(CMAKE_USE_OPENSSL OFF CACHE BOOL "" FORCE)' > gf-init.cmake && \
-    ./bootstrap --parallel=$(nproc) --init=gf-init.cmake --generator=Ninja && \
+    cd cmake-${_GDBF_CMAKE_VERSION} && \
+    echo 'set(CMAKE_USE_OPENSSL OFF CACHE BOOL "" FORCE)' > gdbf-init.cmake && \
+    ./bootstrap --parallel=$(nproc) --init=gdbf-init.cmake --generator=Ninja && \
     ninja install && \
     cd / && rm -rf /cmake* cmake-*
 
 # Build and install Clang/LLVM toolchain using LLVM 18 as bootstrap compiler
 RUN tar xf /llvm-project.tar.xz && \
-    cmake -S llvm-project-${_GF_CLANG_VERSION}.src/llvm -B build-toolchain -GNinja \
+    cmake -S llvm-project-${_GDBF_CLANG_VERSION}.src/llvm -B build-toolchain -GNinja \
         -DCMAKE_C_COMPILER=clang-18 \
         -DCMAKE_CXX_COMPILER=clang++-18 \
         -DCMAKE_C_FLAGS="-march=x86-64" \
@@ -86,14 +86,14 @@ ENV CMAKE_TOOLCHAIN_FILE=/pinnedtoolchain/pinnedtoolchain.cmake
 
 FROM builder AS build
 
-ARG GF_BUILD_JOBS
+ARG GDBF_BUILD_JOBS
 
-COPY / /gf
+COPY / /gdbf
 
-RUN cmake -S /gf -B build \
+RUN cmake -S /gdbf -B build \
         -DCMAKE_BUILD_TYPE=Release \
         -GNinja && \
-    cmake --build build ${GF_BUILD_JOBS:+-j$GF_BUILD_JOBS}
+    cmake --build build ${GDBF_BUILD_JOBS:+-j$GDBF_BUILD_JOBS}
 
 FROM scratch AS exporter
-COPY --from=build /build/gf /gf
+COPY --from=build /build/gdbf /gdbf

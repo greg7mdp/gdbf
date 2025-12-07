@@ -1,6 +1,6 @@
-# gf – A Modern GDB Frontend
+# gdbf – A Modern GDB Frontend
 
-[![Linux](https://github.com/greg7mdp/gf/actions/workflows/linux.yml/badge.svg)](https://github.com/greg7mdp/gf/actions/workflows/linux.yml)
+[![Linux](https://github.com/greg7mdp/gdbf/actions/workflows/linux.yml/badge.svg)](https://github.com/greg7mdp/gdbf/actions/workflows/linux.yml)
 
 
 
@@ -10,12 +10,12 @@
 
 ## Screenshot
 
-![Main debugging interface](https://github.com/greg7mdp/gf/blob/main/img/gf_01.png)
+![Main debugging interface](https://github.com/greg7mdp/gdbf/blob/main/img/gf_01.png)
 *Main debugging interface showing source view, watch window, and stack*
 
 ---
 
-gf is a lightweight and full featured GDB frontend for Linux.
+gdbf is a lightweight and full featured GDB frontend for Linux.
 
 ## Features
 
@@ -57,13 +57,13 @@ Pre-built portable binaries are available for each release:
 
 ```bash
 # Download latest release
-wget https://github.com/greg7mdp/gf/releases/latest/download/gf-VERSION-linux-x86_64.tar.gz
+wget https://github.com/greg7mdp/gdbf/releases/latest/download/gdbf-VERSION-linux-x86_64.tar.gz
 
 # Extract
-tar -xzf gf-VERSION-linux-x86_64.tar.gz
+tar -xzf gdbf-VERSION-linux-x86_64.tar.gz
 
 # Run
-./gf
+./gdbf
 ```
 
 **Requirements:** Linux with glibc 2.27+ (Ubuntu 18.04+, Debian 10+, etc.), X11, and FreeType installed.
@@ -81,8 +81,8 @@ tar -xzf gf-VERSION-linux-x86_64.tar.gz
 
 ```bash
 # Clone the repository
-git clone https://github.com/greg7mdp/gf.git
-cd gf
+git clone https://github.com/greg7mdp/gdbf.git
+cd gdbf
 
 # Configure with CMake
 cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++-18 -GNinja .
@@ -91,7 +91,7 @@ cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++-18 -GNinja
 cmake --build build
 
 # Run
-./build/gf
+./build/gdbf
 ```
 
 ### CMake Options
@@ -107,20 +107,20 @@ cmake --build build
 ### First Run
 
 ```bash
-# Run gf
-./build/gf
+# Run gdbf
+./build/gdbf
 
 # if your program `./myprog` crashed and generated a core file
-./build/gf ./myprog <core_dump_file>
+./build/gdbf ./myprog <core_dump_file>
 
 # to attach to a running instance
-./build/gf ./myprog <pid>
+./build/gdbf ./myprog <pid>
 
 # Or with command-line arguments forwarded to GDB
-./build/gf --args ./myprog arg1 arg2
+./build/gdbf --args ./myprog arg1 arg2
 ```
 
-If you have run the same program before, no need to provide the arguments again, they will be loaded from the program `.ini` file in the `.gf` directory. 
+If you have run the same program before, no need to provide the arguments again, they will be loaded from the program `.ini` file in the `.gdbf` directory. 
 
 Also, you can use the `up` and `down` arrow keys to scroll through previously used executables and their arguments.
 
@@ -171,8 +171,8 @@ Also, you can use the `up` and `down` arrow keys to scroll through previously us
 # Record your program
 rr record ./your_program
 
-# Replay in gf
-gf --rr-replay
+# Replay in gdbf
+gdbf --rr-replay
 ```
 
 Use `Ctrl+Shift+F5/F10/F11` for reverse continue/step.
@@ -191,13 +191,13 @@ Use `Ctrl+Shift+F5/F10/F11` for reverse continue/step.
 ## Documentation
 
 ### User Guides
-- **[Configuration Guide](https://github.com/greg7mdp/gf#configuration)** - Customize gf to your workflow
-- **[Special Commands](https://github.com/greg7mdp/gf#special-commands)** - gf-specific GDB commands
-- **[Watch Hooks](https://github.com/greg7mdp/gf#watch-window-hooks)** - Python integration for custom types
+- **[Configuration Guide](https://github.com/greg7mdp/gdbf#configuration)** - Customize gdbf to your workflow
+- **[Special Commands](https://github.com/greg7mdp/gdbf#special-commands)** - gdbf-specific GDB commands
+- **[Watch Hooks](https://github.com/greg7mdp/gdbf#watch-window-hooks)** - Python integration for custom types
 
 ### Developer Documentation
-- **[Luigi GUI Framework](doc/luigi.md)** - Documentation for the UI framework powering gf
-- **[Plugin System](doc/plugins.md)** - Extend gf with custom windows and commands
+- **[Luigi GUI Framework](doc/luigi.md)** - Documentation for the UI framework powering gdbf
+- **[Plugin System](doc/plugins.md)** - Extend gdbf with custom windows and commands
 - **[Profiler Guide](doc/profiler_instructions.txt)** - Using the embedded profiler
 
 ### External Resources
@@ -206,7 +206,7 @@ Use `Ctrl+Shift+F5/F10/F11` for reverse continue/step.
 
 ## Configuration
 
-gf loads configuration on startup from `~/.config/gf_config.ini`. (if that file is not present, it will try `~/.config/gf2_config.ini`)
+gdbf loads configuration on startup from `~/.config/gdbf_config.ini`. (if that file is not present, it will try `~/.config/gf2_config.ini`)
 
 ### Basic Configuration
 
@@ -276,7 +276,7 @@ Ctrl+Shift+F11=reverse-step
 F12=continue
 ```
 
-You can use any GDB command or gf special commands.
+You can use any GDB command or gdbf special commands.
 
 ### Preset Commands
 
@@ -293,7 +293,7 @@ Separate commands with `;`, use `&` at the end to run asynchronously.
 
 ### Themes
 
-gf includes multiple built-in color themes for both light and dark preferences. Switch between themes using `Ctrl+T` (next) and `Ctrl+Shift+T` (previous).
+gdbf includes multiple built-in color themes for both light and dark preferences. Switch between themes using `Ctrl+T` (next) and `Ctrl+Shift+T` (previous).
 
 **Available Themes:**
 
@@ -343,7 +343,7 @@ backtrace_count_limit=50
 
 ### clangd Configuration
 
-gf integrates clangd for code navigation features (goto definition with `Alt+.` and go back with `Alt+,`). If `clangd` is already in your path, no additional configuration is necessary, otherwise you may specify the path to the clangd executable in `~/.config/gf_config.ini`:
+gdbf integrates clangd for code navigation features (goto definition with `Alt+.` and go back with `Alt+,`). If `clangd` is already in your path, no additional configuration is necessary, otherwise you may specify the path to the clangd executable in `~/.config/gdbf_config.ini`:
 
 ```ini
 [clangd]
@@ -361,11 +361,11 @@ clangd uses the `compile_commands.json` compilation database to understand your 
 # During CMake configuration, enable compile commands export
 cmake -Bbuild -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug .
 
-# For the project you're debugging (not gf itself), create a symlink at the root
+# For the project you're debugging (not gdbf itself), create a symlink at the root
 ln -s build/compile_commands.json .
 ```
 
-**Note:** The compilation database should be generated for the **project you're debugging**, not for gf itself. Place the `compile_commands.json` file (or a symlink to it) in your project's root directory where you source files are located.
+**Note:** The compilation database should be generated for the **project you're debugging**, not for gdbf itself. Place the `compile_commands.json` file (or a symlink to it) in your project's root directory where you source files are located.
 
 Without a compilation database, clangd may still work but with limited accuracy, especially for complex projects with custom include paths or compiler flags.
 
@@ -375,19 +375,19 @@ Configure control pipe for editor integration:
 
 ```ini
 [pipe]
-control=/tmp/gf_control.pipe
-log=/tmp/gf_log.pipe
+control=/tmp/gdbf_control.pipe
+log=/tmp/gdbf_log.pipe
 ```
 
 Send commands to the pipe:
 
 ```bash
 # Jump to file and line
-echo "f /path/to/file.cpp" > /tmp/gf_control.pipe
-echo "l 123" > /tmp/gf_control.pipe
+echo "f /path/to/file.cpp" > /tmp/gdbf_control.pipe
+echo "l 123" > /tmp/gdbf_control.pipe
 
 # Execute GDB command
-echo "c file myapp" > /tmp/gf_control.pipe
+echo "c file myapp" > /tmp/gdbf_control.pipe
 ```
 
 ### Vim Integration
@@ -397,22 +397,22 @@ echo "c file myapp" > /tmp/gf_control.pipe
 server_name=GVIMServer
 ```
 
-Use `F2` in gf to sync with gvim.
+Use `F2` in gdbf to sync with gvim.
 
 ## Special Commands
 
-gf provides custom GDB commands:
+gdbf provides custom GDB commands:
 
 | Command | Description |
 |---------|-------------|
-| `gf-step` | Step line or instruction (context-aware) |
-| `gf-next` | Step over line or instruction (context-aware) |
-| `gf-step-out-of-block` | Step to next line after closing `}` |
-| `gf-restart-gdb` | Restart GDB process (loses state) |
-| `gf-get-pwd` | Sync working directory from executable |
-| `gf-switch-to <window>` | Switch to named window |
-| `gf-command <name>` | Run preset command from `[commands]` section |
-| `gf-inspect-line` | Toggle line inspect mode (bound to backtick) |
+| `gdbf-step` | Step line or instruction (context-aware) |
+| `gdbf-next` | Step over line or instruction (context-aware) |
+| `gdbf-step-out-of-block` | Step to next line after closing `}` |
+| `gdbf-restart-gdb` | Restart GDB process (loses state) |
+| `gdbf-get-pwd` | Sync working directory from executable |
+| `gdbf-switch-to <window>` | Switch to named window |
+| `gdbf-command <name>` | Run preset command from `[commands]` section |
+| `gdbf-inspect-line` | Toggle line inspect mode (bound to backtick) |
 
 ## Watch Window Hooks
 
@@ -428,9 +428,9 @@ def RectangleHook(item, field):
     else:
         print('[width]')
         print('[height]')
-        _gf_fields_recurse(item)
+        _gdbf_fields_recurse(item)
 
-gf_hooks = { 'Rectangle': RectangleHook }
+gdbf_hooks = { 'Rectangle': RectangleHook }
 ```
 
 ### Dynamic Arrays
@@ -447,24 +447,9 @@ Template parameters are removed from type names, so `Array<int>` uses the `Array
 
 ## Contributing
 
-See **[CONTRIBUTING.md](doc/contributing.md)** for details on how to contribute to gf.
+See **[CONTRIBUTING.md](doc/contributing.md)** for details on how to contribute to gdbf.
 
 
 ## Contributors
 
-gf was originally created by `nakst` (see https://github.com/nakst/gf). Without him, this current repo wouldn't exist. Much of that original version still lives in this repo. Beside its creator, `nakst`, it also was improved by the contributors listed below:
-
-```
-Philippe Mongeau (phmongeau)
-Jimmy "Keeba" Lefevre (JimmyLefevre)
-John Blat (johnblat64)
-IWouldRatherUsePasteBin
-Gavin Beatty (gavinbeatty)
-Michael Stopa (StomyPX)
-Anders Kaare (sqaxomonophonen)
-Arseniy Khvorov (khvorov45)
-```
-
-I found `gf` quite useful, but felt like fixing some issues that bothered me in my daily use. The more I hacked at `gf`, the more I was impressed by what it achieved to implement in so few lines of code, and the more fun I had with this process. 
-
-Eventually I decided to update the code to a more typical C++ implementation. I attempted to stay as close to the metal as possible, in order to retain gf's responsiveness. This is the code you can see in my current repository.
+gdbf is derived from the original [gf](https://github.com/nakst/gf) project by `nakst`, with significant changes from the contributors from this repository.

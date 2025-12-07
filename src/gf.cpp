@@ -37,7 +37,7 @@
 namespace rng          = std::ranges;
 static const auto npos = std::string::npos;
 
-extern GF_Config     gfc;
+extern GDBF_Config   gdbfc;
 extern Context       ctx;
 extern BreakpointMgr s_breakpoint_mgr;
 
@@ -266,9 +266,9 @@ struct HistoryManager : public FileImage {
    }
 };
 
-// return <path>/.gf/<progname>.<extension> where path is `cwd` dir where `gf` was launched,
+// return <path>/.gdbf/<progname>.<extension> where path is `cwd` dir where `gdbf` was launched,
 // or the one above
-fs::path GF_Config::get_prog_path(string_view extension) {
+fs::path GDBF_Config::get_prog_path(string_view extension) {
    auto path = get_local_config_dir();
 
    // and we have one config file for each program name. Update as path
@@ -287,25 +287,25 @@ static const char* pythonCode = R"(py
 
 import gdb.types
 
-def _gf_hook_string(basic_type):
+def _gdbf_hook_string(basic_type):
     hook_string = str(basic_type)
     template_start = hook_string.find('<')
     if template_start != -1:
        hook_string = hook_string[0:template_start]
     return hook_string
 
-def _gf_basic_type(value):
+def _gdbf_basic_type(value):
     basic_type = gdb.types.get_basic_type(value.type)
     if basic_type.code == gdb.TYPE_CODE_PTR:
         basic_type = gdb.types.get_basic_type(basic_type.target())
     return basic_type
 
-def _gf_value(expression):
+def _gdbf_value(expression):
     try:
         value = gdb.parse_and_eval(expression[0])
         for index in expression[1:]:
             if isinstance(index, str) and index[0] == '[':
-                value = gf_hooks[_gf_hook_string(_gf_basic_type(value))](value, index)
+                value = gdbf_hooks[_gdbf_hook_string(_gdbf_basic_type(value))](value, index)
             else:
                 value = value[index]
         return value
@@ -313,14 +313,14 @@ def _gf_value(expression):
         print('??')
         return None
 
-def gf_typeof(expression):
-    value = _gf_value(expression)
+def gdbf_typeof(expression):
+    value = _gdbf_value(expression)
     if value == None:
        return
     print(value.type)
 
-def gf_valueof(expression, format):
-    value = _gf_value(expression)
+def gdbf_valueof(expression, format):
+    value = _gdbf_value(expression)
     if value == None:
        return
     result = ''
@@ -341,38 +341,38 @@ def gf_valueof(expression, format):
         result = result + '??'
     print(result)
 
-def gf_addressof(expression):
-    value = _gf_value(expression)
+def gdbf_addressof(expression):
+    value = _gdbf_value(expression)
     if value == None:
        return
     print(value.address)
 
-def __gf_fields_recurse(type):
+def __gdbf_fields_recurse(type):
     if type.code == gdb.TYPE_CODE_STRUCT or type.code == gdb.TYPE_CODE_UNION:
         for field in gdb.types.deep_items(type):
             if field[1].is_base_class:
-               __gf_fields_recurse(field[1].type)
+               __gdbf_fields_recurse(field[1].type)
             else:
                print(field[0])
     elif type.code == gdb.TYPE_CODE_ARRAY:
         print('(array) %d' % (type.range()[1]+1))
 
-def _gf_fields_recurse(value):
-    basic_type = _gf_basic_type(value)
-    __gf_fields_recurse(basic_type)
+def _gdbf_fields_recurse(value):
+    basic_type = _gdbf_basic_type(value)
+    __gdbf_fields_recurse(basic_type)
 
-def gf_fields(expression):
-    value = _gf_value(expression)
+def gdbf_fields(expression):
+    value = _gdbf_value(expression)
     if value == None:
        return
-    basic_type = _gf_basic_type(value)
-    hook_string = _gf_hook_string(basic_type)
+    basic_type = _gdbf_basic_type(value)
+    hook_string = _gdbf_hook_string(basic_type)
     try:
-       gf_hooks[hook_string](value, None)
+       gdbf_hooks[hook_string](value, None)
     except:
-       __gf_fields_recurse(basic_type)
+       __gdbf_fields_recurse(basic_type)
 
-def gf_locals():
+def gdbf_locals():
     try:
         frame = gdb.selected_frame()
         block = frame.block()
@@ -640,7 +640,7 @@ void Context::debugger_thread_fn() {
          // if (catBuffer.contains("(gdb) ") && !catBuffer.contains("\n(gdb) "))
          //  std:: print("================ got catBuffer=\"{}\"\n", catBuffer);
 
-         // just checking for `"(gdb) "` fails when I'm debugging `gf` itself, as a string containing `"(gdb) "`
+         // just checking for `"(gdb) "` fails when I'm debugging `gdbf` itself, as a string containing `"(gdb) "`
          // is passed to `MsgReceivedData` sometimes, and therefore appears on the stack trace.
          // => Be more strict with what markes the end of the debugger output.
          if (!(cat_buffer.contains("\n(gdb) ") || cat_buffer.contains(">(gdb) ") || cat_buffer == "(gdb) ")) {
@@ -737,14 +737,14 @@ void Context::restore_focus() {
 }
 
 void Context::grab_focus(UIWindow* win) {
-   if (win && gfc._grab_focus_on_breakpoint) {
+   if (win && gdbfc._grab_focus_on_breakpoint) {
       _prev_focus_win = _ui->get_focus();
       win->grab_focus(); // grab focus when breakpoint is hit!
    }
 }
 
 void StackWindow::update_stack() {
-   auto res = ctx.eval_command(std::format("bt {}", gfc._backtrace_count_limit));
+   auto res = ctx.eval_command(std::format("bt {}", gdbfc._backtrace_count_limit));
    if (res.empty())
       return;
 
@@ -1054,19 +1054,19 @@ void BreakpointMgr::update_breakpoints_from_gdb() {
 
 opt_string Context::send_to_gdb_internal(string_view command, bool synchronous) {
    opt_string res;
-   if (command == "gf-step") {
+   if (command == "gdbf-step") {
       if (!_program_running)
          res = send_command_to_debugger(_source_window->_showing_disassembly ? "stepi" : "s", true, synchronous);
-   } else if (command == "gf-next") {
+   } else if (command == "gdbf-next") {
       if (!_program_running)
          res = send_command_to_debugger(_source_window->_showing_disassembly ? "nexti" : "n", true, synchronous);
-   } else if (command == "gf-step-out-of-block") {
+   } else if (command == "gdbf-step-out-of-block") {
       int line = source_find_end_of_block();
 
       if (line != -1) {
          (void)send_command_to_debugger(std::format("until {}", line), true, synchronous);
       }
-   } else if (command == "gf-step-into-outer") {
+   } else if (command == "gdbf-step-into-outer") {
       const char *start, *end;
       bool        found = source_find_outer_function_call(&start, &end);
 
@@ -1074,13 +1074,13 @@ opt_string Context::send_to_gdb_internal(string_view command, bool synchronous) 
          res = send_command_to_debugger(std::format("advance {}", string_view(start, static_cast<int>(end - start))),
                                         true, synchronous);
       } else {
-         return send_to_gdb_internal("gf-step", synchronous);
+         return send_to_gdb_internal("gdbf-step", synchronous);
       }
-   } else if (command == "gf-restart-gdb") {
+   } else if (command == "gdbf-restart-gdb") {
       _first_update = true;
       kill_gdb();
       start_debugger_thread();
-   } else if (command == "gf-get-pwd") {
+   } else if (command == "gdbf-get-pwd") {
       auto        res    = eval_command("info source");
       const char* needle = "Compilation directory is ";
       const char* pwd    = strstr(res.c_str(), needle);
@@ -1101,10 +1101,10 @@ opt_string Context::send_to_gdb_internal(string_view command, bool synchronous) 
       }
 
       _main_window->show_dialog(0, "Couldn't get the working directory.\n%f%B", "OK");
-   } else if (command.starts_with("gf-switch-to ")) {
+   } else if (command.starts_with("gdbf-switch-to ")) {
       switch_to_window_and_focus(command.substr(13));
-   } else if (command.starts_with("gf-command ")) {
-      for (const auto& cmd : gfc._preset_commands) {
+   } else if (command.starts_with("gdbf-command ")) {
+      for (const auto& cmd : gdbfc._preset_commands) {
          if (!cmd._key.starts_with(command.substr(11)))
             continue;
          char* copy     = strdup(cmd._value.c_str());
@@ -1137,11 +1137,11 @@ opt_string Context::send_to_gdb_internal(string_view command, bool synchronous) 
          free(copy);
          break;
       }
-   } else if (command == "gf-inspect-line") {
+   } else if (command == "gdbf-inspect-line") {
       inspect_line();
-   } else if (command == "target remote :1234" && gfc._confirm_command_connect &&
+   } else if (command == "target remote :1234" && gdbfc._confirm_command_connect &&
               _main_window->show_dialog(0, "Connect to remote target?\n%f%B%C", "Connect", "Cancel") == "Cancel") {
-   } else if (command == "kill" && gfc._confirm_command_kill &&
+   } else if (command == "kill" && gdbfc._confirm_command_kill &&
               _main_window->show_dialog(0, "Kill debugging target?\n%f%B%C", "Kill", "Cancel") == "Cancel") {
    } else {
       res = send_command_to_debugger(command, true, synchronous);
@@ -1151,12 +1151,12 @@ opt_string Context::send_to_gdb_internal(string_view command, bool synchronous) 
 }
 
 bool Context::sync_with_gvim() {
-   if (gfc._vim_server_name.empty())
+   if (gdbfc._vim_server_name.empty())
       return false;
 
    char buffer[1024];
    std_format_to_n(buffer, sizeof(buffer), "vim --servername {} --remote-expr \"execute(\\\"ls\\\")\" | grep %%",
-                   gfc._vim_server_name);
+                   gdbfc._vim_server_name);
    FILE* file = popen(buffer, "r");
    if (!file)
       return false;
@@ -1180,7 +1180,7 @@ bool Context::sync_with_gvim() {
    if (name[0] != '/' && name[0] != '~') {
       char buffer[1024];
       std_format_to_n(buffer, sizeof(buffer), "vim --servername {} --remote-expr \"execute(\\\"pwd\\\")\" | grep '/'",
-                      gfc._vim_server_name);
+                      gdbfc._vim_server_name);
       FILE* file = popen(buffer, "r");
       if (!file)
          return false;
@@ -1205,9 +1205,9 @@ void Context::shell_or_send_to_gdb_internal(string_view command) {
       if (_display_output)
          _display_output->insert_content(std::format("Running shell command \"{}\"...\n", command), false);
       int        start  = time(nullptr);
-      int        result = system(std::format("{} > .output.gf 2>&1", command).c_str());
-      opt_string output = LoadFile(".output.gf");
-      unlink(".output.gf");
+      int        result = system(std::format("{} > .output.gdbf 2>&1", command).c_str());
+      opt_string output = LoadFile(".output.gdbf");
+      unlink(".output.gdbf");
       if (!output)
          return;
 
@@ -1333,12 +1333,12 @@ void Context::emplace_gdb_args_from_ini_file(std::string_view value) {
 //   +  "gdb"
 //   +  "theme"
 // ------------------------------------------------------------------------------
-UIConfig GF_Config::load_settings(bool earlyPass) {
+UIConfig GDBF_Config::load_settings(bool earlyPass) {
    bool        current_folder_is_trusted = false;
    static bool cwd_config_not_trusted    = false;
    UIConfig    ui_config;
 
-   // load global config (from ~/.config/gf_config.ini or, if not present, ~/.config/gf2_config.ini)
+   // load global config (from ~/.config/gdbf_config.ini or, if not present, ~/.config/gf2_config.ini)
    // ----------------------------------------------------------------------------------------------
    const auto config = LoadFile(_global_config_path.native());
    if (!config)
@@ -1517,9 +1517,9 @@ std::string SourceWindow::s_previous_file_loc;
 
 UIElement* SourceWindow::Create(UIElement* parent) {
    ctx._source_window             = new SourceWindow;
-   auto code_font                 = ctx._ui->create_font(ctx._ui->default_font_path(), gfc._code_font_size);
+   auto code_font                 = ctx._ui->create_font(ctx._ui->default_font_path(), gdbfc._code_font_size);
    ctx._source_window->_code_font = code_font;
-   uint32_t flags                 = gfc._selectable_source ? UICode::SELECTABLE : 0;
+   uint32_t flags                 = gdbfc._selectable_source ? UICode::SELECTABLE : 0;
    flags |= UICode::MANAGE_BUFFER;
    ctx._display_code = &parent->add_code(flags)
                            .set_font(code_font)
@@ -2405,7 +2405,7 @@ const char* BitmapViewerGetBits(const std::string& pointer_string, const std::st
 
    unique_ptr<uint32_t[]> bits{new uint32_t[stride * height / 4]};
 
-   std::string bitmap_path = get_realpath(".bitmap.gf");
+   std::string bitmap_path = get_realpath(".bitmap.gdbf");
 
    auto res = ctx.eval_command(std::format("dump binary memory {} ({}) ({}+{})", bitmap_path, pr, pr, stride * height));
 
@@ -2692,7 +2692,7 @@ private:
 
       position += std_format_to_n(buffer + position, sizeof(buffer) - position, "]");
 
-      if (function == "gf_valueof") {
+      if (function == "gdbf_valueof") {
          position += std_format_to_n(buffer + position, sizeof(buffer) - position, ",'{:c}'", _format ?: ' ');
       }
 
@@ -2727,7 +2727,7 @@ public:
    }
 
    [[nodiscard]] bool has_fields() const {
-      auto res = evaluate("gf_fields");
+      auto res = evaluate("gdbf_fields");
 
       if (res.contains("(array)") || res.contains("(d_arr)")) {
          return true;
@@ -2753,7 +2753,7 @@ public:
    }
 
    std::string get_address() {
-      auto res = evaluate("gf_addressof");
+      auto res = evaluate("gdbf_addressof");
 
       if (res.contains("??")) {
          ctx._main_window->show_dialog(0, "Couldn't get the address of the variable.\n%f%B", "OK");
@@ -2775,7 +2775,7 @@ public:
    // }}\n(gdb) "
    // -----------------------------------------------------------------------------------------------------------------
    std::string get_value(multiline_t ml) {
-      auto res = evaluate("gf_valueof");
+      auto res = evaluate("gdbf_valueof");
 
       // remove `\n(gdb) ` at the end
       // ----------------------------
@@ -2793,7 +2793,7 @@ public:
    // "std::vector<int, std::allocator<int> >"
    // -----------------------------------------------------------------------------------------------------------------
    std::string get_type() {
-      auto res = evaluate("gf_typeof");
+      auto res = evaluate("gdbf_typeof");
       resize_to_lf(res);
       return res;
    }
@@ -2813,7 +2813,7 @@ public:
          for (size_t i = 0; i < _fields.size(); i++)
             _fields[i]->save_as(file, indent + 1, _is_array ? i : -1);
       } else {
-         auto res = evaluate("gf_valueof");
+         auto res = evaluate("gdbf_valueof");
          if (!res.empty()) {
             resize_to_lf(res);
             std::print(file, "{}\n", res);
@@ -3095,7 +3095,7 @@ public:
 
    void update() {
       if (_mode == WatchWindow::WATCH_LOCALS) {
-         auto res = ctx.eval_command("py gf_locals()");
+         auto res = ctx.eval_command("py gdbf_locals()");
 
          bool new_frame = (_last_local_list.empty() || _last_local_list != res);
 
@@ -3175,7 +3175,7 @@ public:
 
       for (size_t i = 0; i < _dynamic_arrays.size(); i++) {
          const shared_ptr<Watch>& watch = _dynamic_arrays[i];
-         auto                     res   = watch->evaluate("gf_fields");
+         auto                     res   = watch->evaluate("gdbf_fields");
          if (res.empty() || !res.contains("(d_arr)"))
             continue;
          int count = sv_atoi(res, 7);
@@ -3284,7 +3284,7 @@ void Watch::add_fields(WatchWindow* w) {
 
    _loaded_fields = true;
 
-   auto res = evaluate("gf_fields");
+   auto res = evaluate("gdbf_fields");
 
    if (res.contains("(array)") || res.contains("(d_arr)")) {
       int count = sv_atoi(res, 7);
@@ -3863,7 +3863,7 @@ void WatchWindow::WatchChangeLoggerCreate() {
 // ---------------------------------------------------
 // parse something like:
 // "\nHardware watchpoint 16: * 0x7fffffffd85c\n\nOld value = 1\nNew value = 2\000main (argc=1, argv=0x7fffffffd988)\n
-// at /home/greg/github/greg/gf/examples/gf_testprog.cpp:33\00033\t   int res = a.x + c.y[1] - fi"
+// at /home/greg/github/greg/gdbf/examples/gdbf_testprog.cpp:33\00033\t   int res = a.x + c.y[1] - fi"
 // --------------------------------------------------------------------------------------------------
 bool WatchLoggerUpdate(std::string _data) {
    char* data              = &_data[0];
@@ -4569,11 +4569,11 @@ struct CommandsWindow {
    static UIElement* Create(UIElement* parent) {
       UIPanel* panel =
          &parent->add_panel(UIPanel::COLOR_1 | UIPanel::SMALL_SPACING | UIPanel::EXPAND | UIPanel::SCROLL);
-      if (!gfc._preset_commands.size())
+      if (!gdbfc._preset_commands.size())
          panel->add_label(0, "No preset commands found in config file!");
 
-      for (const auto& cmd : gfc._preset_commands) {
-         panel->add_button(0, cmd._key).on_click([command = std::format("gf-command {}", cmd._key)](UIButton&) {
+      for (const auto& cmd : gdbfc._preset_commands) {
+         panel->add_button(0, cmd._key).on_click([command = std::format("gdbf-command {}", cmd._key)](UIButton&) {
             ctx.send_to_gdb_async(command);
          });
       }
@@ -4588,12 +4588,12 @@ struct CommandsWindow {
 
 struct LogWindow {
    static void* _thread_fn(void* context) {
-      if (gfc._log_pipe_path.empty()) {
+      if (gdbfc._log_pipe_path.empty()) {
          std::print(std::cerr, "Warning: The log pipe path has not been set in the configuration file!\n");
          return nullptr;
       }
 
-      int file = open(gfc._log_pipe_path.c_str(), O_RDONLY | O_NONBLOCK);
+      int file = open(gdbfc._log_pipe_path.c_str(), O_RDONLY | O_NONBLOCK);
 
       if (file == -1) {
          std::print(std::cerr, "Warning: Could not open the log pipe!\n");
@@ -4691,7 +4691,7 @@ public:
 
       // remove line continuation pattern, as in:
       //   Id   Target Id                                         Frame
-      // * 1    Thread 0x7ffff78eb780 (LWP 1247164) "gf_testprog" main (argc=1,
+      // * 1    Thread 0x7ffff78eb780 (LWP 1247164) "gdbf_testprog" main (argc=1,
       //     argv=0x7fffffffd998)
       // ----------------------------------------------------------------------
       remove_pattern(res, "\n   ");
@@ -4730,7 +4730,7 @@ void ExecutableWindow::restore_watches() {
    if (_current_exe.empty() || _same_prog || _prog_config_path.empty())
       return;
 
-   if (gfc._restore_watch_window && !(_current_exe_flags & ef_watches_restored)) {
+   if (gdbfc._restore_watch_window && !(_current_exe_flags & ef_watches_restored)) {
       _current_exe_flags |= ef_watches_restored;
       INI_File{_prog_config_path}.with_section_lines("[watch]\n", [&](string_view line) {
          // print ("watch={}\n", line);
@@ -4740,7 +4740,7 @@ void ExecutableWindow::restore_watches() {
 }
 
 void ExecutableWindow::restore_breakpoints() {
-   if (!gfc._restore_breakpoints || _current_exe.empty() || _same_prog || _prog_config_path.empty())
+   if (!gdbfc._restore_breakpoints || _current_exe.empty() || _same_prog || _prog_config_path.empty())
       return;
 
    if (!(_current_exe_flags & ef_breakpoints_restored)) {
@@ -4750,7 +4750,7 @@ void ExecutableWindow::restore_breakpoints() {
 }
 
 void ExecutableWindow::save_watches() {
-   if (!gfc._restore_watch_window || _current_exe.empty() || _prog_config_path.empty() || !ctx._first_watch_window)
+   if (!gdbfc._restore_watch_window || _current_exe.empty() || _prog_config_path.empty() || !ctx._first_watch_window)
       return;
 
    std::stringstream ss;
@@ -4765,7 +4765,7 @@ void ExecutableWindow::save_watches() {
 }
 
 void ExecutableWindow::save_breakpoints() {
-   if (!gfc._restore_breakpoints || _current_exe.empty() || _prog_config_path.empty())
+   if (!gdbfc._restore_breakpoints || _current_exe.empty() || _prog_config_path.empty())
       return;
 
    std::stringstream ss;
@@ -4791,7 +4791,7 @@ std::string ExecutableWindow::start_info_json() {
 }
 
 void ExecutableWindow::save_prog_args() {
-   if (!gfc._restore_prog_args || _current_exe.empty() || _prog_config_path.empty())
+   if (!gdbfc._restore_prog_args || _current_exe.empty() || _prog_config_path.empty())
       return;
 
    std::string exe_json = ";" + start_info_json(); // ends with '\n'
@@ -4801,12 +4801,12 @@ void ExecutableWindow::save_prog_args() {
    // --------------------------------------------------------------------
    INI_File{_prog_config_path}.insert_in_section("[program]\n", exe_json, 0);
 
-   // Also save program path in `.gf/gf_config.ini` so that we can cycle through the
+   // Also save program path in `.gdbf/gdbf_config.ini` so that we can cycle through the
    // most recently used executables
    // ------------------------------------------------------------------------------
    std::string path{_path->text()};
    path += "\n";
-   INI_File{gfc._local_config_path}.insert_in_section("[program]\n", path, 0);
+   INI_File{gdbfc._local_config_path}.insert_in_section("[program]\n", path, 0);
 }
 
 
@@ -4821,8 +4821,8 @@ void ExecutableWindow::maybe_clear_exe_info() {
 void ExecutableWindow::maybe_set_exe_info(std::string_view exe_path) {
    if (!_same_prog) {
       _current_exe       = exe_path;
-      _prog_config_path  = gfc.get_prog_config_path();
-      _prog_history_path = gfc.get_command_history_path();
+      _prog_config_path  = gdbfc.get_prog_config_path();
+      _prog_history_path = gdbfc.get_command_history_path();
    }
 }
 
@@ -4873,7 +4873,7 @@ void ExecutableWindow::start_or_run(bool pause) {
       ctx._program_started = true;
 
    if (_should_ask) {
-      ctx.send_to_gdb_internal("gf-get-pwd", true);
+      ctx.send_to_gdb_internal("gdbf-get-pwd", true);
    }
 
    if (!_same_prog)
@@ -4942,51 +4942,51 @@ UIElement* ExecutableWindow::Create(UIElement* parent) {
    ExecutableWindow* win = ctx._executable_window = new ExecutableWindow;
    UIPanel*          panel                        = &parent->add_panel(UIPanel::COLOR_1 | UIPanel::EXPAND);
 
-   if (gfc._exe._path.empty())
-      gfc._exe._args.clear();
+   if (gdbfc._exe._path.empty())
+      gdbfc._exe._args.clear();
 
    panel->add_n(
       [&](auto& p) { p.add_label(0, "Path to executable:"); },
       [&](auto& p) {
          win->_path =
-            &p.add_textbox(0).replace_text(gfc._exe._path, false).on_key_up_down([win](UITextbox& t, UIKeycode code) {
+            &p.add_textbox(0).replace_text(gdbfc._exe._path, false).on_key_up_down([win](UITextbox& t, UIKeycode code) {
                if (code == UIKeycode::DOWN) {
                   // down goes forward in time, so goes up the list since paths stored most recent first in .ini
-                  win->update_path(gfc._local_config_path, -1);
+                  win->update_path(gdbfc._local_config_path, -1);
                } else {
                   // up goes back in time, so goes down the list since paths stored most recent first in .ini
                   assert(code == UIKeycode::UP);
-                  win->update_path(gfc._local_config_path, 1);
+                  win->update_path(gdbfc._local_config_path, 1);
                }
-               win->update_args(gfc.get_prog_config_path(), 0, false);
+               win->update_args(gdbfc.get_prog_config_path(), 0, false);
                return true;
             });
 
-         // if not already set, make sure we initialize `_path` with the first entry of the `.gf/gf_config.ini` file
-         if (gfc._exe._path.empty())
-            win->update_path(gfc._local_config_path, 0);
+         // if not already set, make sure we initialize `_path` with the first entry of the `.gdbf/gdbf_config.ini` file
+         if (gdbfc._exe._path.empty())
+            win->update_path(gdbfc._local_config_path, 0);
       },
       [&](auto& p) { p.add_label(0, "Command line arguments:"); },
       [&](auto& p) {
          win->_arguments =
-            &p.add_textbox(0).replace_text(gfc._exe._args, false).on_key_up_down([win](UITextbox& t, UIKeycode code) {
+            &p.add_textbox(0).replace_text(gdbfc._exe._args, false).on_key_up_down([win](UITextbox& t, UIKeycode code) {
                if (code == UIKeycode::DOWN) {
                   // down goes forward in time, so goes up the list since args stored most recent first in .ini
-                  win->update_args(gfc.get_prog_config_path(), -1, false);
+                  win->update_args(gdbfc.get_prog_config_path(), -1, false);
                } else {
                   // up goes back in time, so goes down the list since args stored most recent first in .ini
                   assert(code == UIKeycode::UP);
-                  win->update_args(gfc.get_prog_config_path(), 1, false);
+                  win->update_args(gdbfc.get_prog_config_path(), 1, false);
                }
                return true;
             });
 
          // if not already set, make sure we initialize `args` with the first entry of the program ini file
-         if (gfc._exe._path.empty())
-            win->update_args(gfc.get_prog_config_path(), 0, false);
+         if (gdbfc._exe._path.empty())
+            win->update_args(gdbfc.get_prog_config_path(), 0, false);
       },
       [&](auto& p) {
-         p.add_checkbox(0, "Ask GDB for working directory").set_checked(gfc._ask_dir).track(&win->_should_ask);
+         p.add_checkbox(0, "Ask GDB for working directory").set_checked(gdbfc._ask_dir).track(&win->_should_ask);
       },
       [&](auto& p) {
          p.add_panel(UIPanel::HORIZONTAL)
@@ -5881,7 +5881,7 @@ int ProfFlameGraphReport::_table_message_proc(UIElement* el, UIMessage msg, int 
 void ProfLoadProfileData(void* _window) {
    auto* data = static_cast<ProfWindow*>(_window);
 
-   auto        res                 = ctx.eval_expression("gfProfilingTicksPerMs");
+   auto        res                 = ctx.eval_expression("gdbfProfilingTicksPerMs");
    const char* ticks_per_ms_string = strstr(res.c_str(), "= ");
    data->_ticks_per_ms             = ticks_per_ms_string ? sv_atoi(ticks_per_ms_string, 2) : 0;
 
@@ -5890,7 +5890,7 @@ void ProfLoadProfileData(void* _window) {
       return;
    }
 
-   auto pos             = ctx.eval_expression("gfProfilingBufferPosition");
+   auto pos             = ctx.eval_expression("gdbfProfilingBufferPosition");
    int  raw_entry_count = sv_atoi(strstr(pos.c_str(), "= "), 2);
    std::print(std::cerr, "Reading {} profiling entries...\n", raw_entry_count);
 
@@ -5915,10 +5915,11 @@ void ProfLoadProfileData(void* _window) {
    auto* rawEntries = static_cast<ProfProfilingEntry*>(calloc(sizeof(ProfProfilingEntry), raw_entry_count));
 
    char path[PATH_MAX] = "";
-   (void)!realpath(".profile.gf", path);
+   (void)!realpath(".profile.gdbf", path);
    char buffer[PATH_MAX * 2];
    std_format_to_n(buffer, sizeof(buffer),
-                   "dump binary memory {} (gfProfilingBuffer) (gfProfilingBuffer+gfProfilingBufferPosition)", path);
+                   "dump binary memory {} (gdbfProfilingBuffer) (gdbfProfilingBuffer+gdbfProfilingBufferPosition)",
+                   path);
    (void)ctx.eval_command(buffer);
    FILE* f = fopen(path, "rb");
 
@@ -6155,8 +6156,8 @@ void ProfLoadProfileData(void* _window) {
 }
 
 void ProfStepOverProfiled(ProfWindow* window) {
-   (void)ctx.eval_command("call GfProfilingStart()");
-   ctx.send_to_gdb_async("gf-next");
+   (void)ctx.eval_command("call GdbfProfilingStart()");
+   ctx.send_to_gdb_async("gdbf-next");
    window->_in_step_over_profiled = true;
 }
 
@@ -6164,7 +6165,7 @@ void ProfWindowUpdate(const char* data, UIElement* el) {
    auto* window = static_cast<ProfWindow*>(el->_cp);
 
    if (window->_in_step_over_profiled) {
-      (void)ctx.eval_command("call GfProfilingStop()");
+      (void)ctx.eval_command("call GdbfProfilingStop()");
       ProfLoadProfileData(window);
       ctx.switch_to_window_and_focus("Data");
       ctx._data_mdiclient->refresh();
@@ -6217,7 +6218,7 @@ private:
       if (ctx._main_window->show_dialog(0, "Enter address expression:\n%t\n%f%b%b", &expression, "Goto", "Cancel") ==
           "Goto") {
          char buffer[4096];
-         std_format_to_n(buffer, sizeof(buffer), "py gf_valueof(['{}'],' ')", expression);
+         std_format_to_n(buffer, sizeof(buffer), "py gdbf_valueof(['{}'],' ')", expression);
          auto        res    = ctx.eval_command(buffer);
          const char* result = res.c_str();
 
@@ -6746,7 +6747,7 @@ void ViewWindowView(void* cp) {
       }
 
       char temp_path[PATH_MAX] = "";
-      (void)!realpath(".temp.gf", temp_path);
+      (void)!realpath(".temp.gdbf", temp_path);
       res = ctx.eval_expression(std::format("(size_t)strlen((const char *)({}))", address));
       std::print("'{}' -> '{}'\n", buffer, res);
       const char* lengthString = res.c_str() ? strstr(res.c_str(), "= ") : nullptr;
@@ -6800,7 +6801,7 @@ void ViewWindowView(void* cp) {
       auto* grid = new ViewWindowMatrixGrid(panel, w, h, type[0]);
 
       char temp_path[PATH_MAX] = "";
-      (void)!realpath(".temp.gf", temp_path);
+      (void)!realpath(".temp.gdbf", temp_path);
       char buffer[PATH_MAX * 2];
       std_format_to_n(buffer, sizeof(buffer), "dump binary memory {} ({}) ({}+{})", temp_path, res, res,
                       w * h * item_size);
@@ -7218,7 +7219,7 @@ const char* WaveformViewerGetSamples(const std::string& pointer_string, const st
    auto*  samples    = static_cast<float*>(malloc(byte_count));
 
    char transfer_path[PATH_MAX] = "";
-   (void)!realpath(".transfer.gf", transfer_path);
+   (void)!realpath(".transfer.gdbf", transfer_path);
 
    char buffer[PATH_MAX * 2];
    std_format_to_n(buffer, sizeof(buffer), "dump binary memory {} ({}) ({}+{})", transfer_path,
@@ -7494,7 +7495,7 @@ void* ControlPipe::thread_proc(void*) {
    set_thread_name("ctrlpipe_thread");
    bool quit = false;
    while (!quit) {
-      FILE* file = fopen(gfc._control_pipe_path.get(), "rb");
+      FILE* file = fopen(gdbfc._control_pipe_path.get(), "rb");
       auto* s    = new std::string;
       s->resize_and_overwrite(255, [&](char* p, size_t sz) {
          return fread(p, 1, sz, file); // returns size actually read which will resize the string accordingly
@@ -7532,7 +7533,7 @@ auto gdb_invoker(string_view cmd, int flags = 0) {
    return [cmd, flags]() {
       ctx.send_to_gdb_async(cmd);
       if (flags & invoker_restore_focus)
-         ctx.restore_focus(); // restore input focus to the window that had it before `gf` grabbed it
+         ctx.restore_focus(); // restore input focus to the window that had it before `gdbf` grabbed it
       return true;
    };
 }
@@ -7542,7 +7543,7 @@ auto gdb_invoker_or_start(string_view cmd, int flags = 0) {
    return [cmd, flags, invoker]() {
       if (!ctx._program_started) {
          // not running a program yet. Use ExecutableWindow::start_or_run
-         ctx._executable_window->start_or_run(cmd == "gf-next");
+         ctx._executable_window->start_or_run(cmd == "gdbf-next");
       } else {
          invoker();
       }
@@ -7719,7 +7720,7 @@ void Context::add_builtin_windows_and_commands() {
    });
    _interface_commands.push_back({
       ._label = "Restart GDB\tCtrl+R",
-      ._shortcut{.code = UI_KEYCODE_LETTER('R'), .ctrl = true, .invoke = gdb_invoker("gf-restart-gdb")}
+      ._shortcut{.code = UI_KEYCODE_LETTER('R'), .ctrl = true, .invoke = gdb_invoker("gdbf-restart-gdb")}
    });
    _interface_commands.push_back({
       ._label = "Connect\tF4", ._shortcut{.code = UI_KEYCODE_FKEY(4), .invoke = gdb_invoker("target remote :1234")}
@@ -7729,18 +7730,19 @@ void Context::add_builtin_windows_and_commands() {
       ._shortcut{.code = UI_KEYCODE_FKEY(5), .invoke = gdb_invoker_or_start("c", invoker_restore_focus)}
    });
    _interface_commands.push_back({
-      ._label = "Step over\tF10", ._shortcut{.code = UI_KEYCODE_FKEY(10), .invoke = gdb_invoker_or_start("gf-next")}
+      ._label = "Step over\tF10",
+      ._shortcut{.code = UI_KEYCODE_FKEY(10), .invoke = gdb_invoker_or_start("gdbf-next")}
    });
    _interface_commands.push_back({
       ._label = "Step out of block\tShift+F10",
-      ._shortcut{.code = UI_KEYCODE_FKEY(10), .shift = true, .invoke = gdb_invoker("gf-step-out-of-block")}
+      ._shortcut{.code = UI_KEYCODE_FKEY(10), .shift = true, .invoke = gdb_invoker("gdbf-step-out-of-block")}
    });
    _interface_commands.push_back({
-      ._label = "Step in\tF11", ._shortcut{.code = UI_KEYCODE_FKEY(11), .invoke = gdb_invoker("gf-step")}
+      ._label = "Step in\tF11", ._shortcut{.code = UI_KEYCODE_FKEY(11), .invoke = gdb_invoker("gdbf-step")}
    });
    _interface_commands.push_back({
       ._label = "Step into outer\tShift+F8",
-      ._shortcut{.code = UI_KEYCODE_FKEY(8), .shift = true, .invoke = gdb_invoker("gf-step-into-outer")}
+      ._shortcut{.code = UI_KEYCODE_FKEY(8), .shift = true, .invoke = gdb_invoker("gdbf-step-into-outer")}
    });
    _interface_commands.push_back({
       ._label = "Step out\tShift+F11",
@@ -7776,7 +7778,7 @@ void Context::add_builtin_windows_and_commands() {
    });
    _interface_commands.push_back({
       ._label = "Ask GDB for PWD\tCtrl+Shift+P",
-      ._shortcut{.code = UI_KEYCODE_LETTER('P'), .ctrl = true, .shift = true, .invoke = gdb_invoker("gf-get-pwd")}
+      ._shortcut{.code = UI_KEYCODE_LETTER('P'), .ctrl = true, .shift = true, .invoke = gdb_invoker("gdbf-get-pwd")}
    });
    _interface_commands.push_back({
       ._label = "Set disassembly mode\tCtrl+M",
@@ -7980,8 +7982,8 @@ int InterfaceTabPaneMessage(UIElement* el, UIMessage msg, int di, void* dp) {
    return 0;
 }
 
-// `current` is the current position when parsing GF_Config::layout_string
-// ------------------------------------------------------------------------
+// `current` is the current position when parsing GDBF_Config::layout_string
+// -------------------------------------------------------------------------
 const char* InterfaceLayoutNextToken(const char*& current, const char* expected = nullptr) {
    static char buffer[32];
    char*       out = buffer;
@@ -8146,23 +8148,23 @@ void Context::save_layout() const {
    sb.reserve(512);
    generate_layout_string(_main_switcher->_children[0]->_children[0], sb);
    sb += "\n";
-   INI_File{gfc._local_config_path}.insert_in_section("[ui_layout]\n", sb, 0);
+   INI_File{gdbfc._local_config_path}.insert_in_section("[ui_layout]\n", sb, 0);
 }
 
 std::string Context::read_layout(const fs::path& local_config_path) const {
    return INI_File{local_config_path}.with_section("[ui_layout]\n", [&](string_view sv) {
       auto v = get_lines(sv);
-      return v.empty() ? std::string{} :  std::string{v[0]};
+      return v.empty() ? std::string{} : std::string{v[0]};
    });
 }
 
 void Context::save_window_size() const {
-   auto width = _main_window->width();
+   auto width  = _main_window->width();
    auto height = _main_window->height();
-   if (_main_window &&
-       ((width != static_cast<uint32_t>(gfc._window_width) || height != static_cast<uint32_t>(gfc._window_height)))) {
+   if (_main_window && ((width != static_cast<uint32_t>(gdbfc._window_width) ||
+                         height != static_cast<uint32_t>(gdbfc._window_height)))) {
       std::string sz = std::format("window_width={}\nwindow_height={}\n", width, height);
-      INI_File{gfc._local_config_path}.replace_section("[ui_size]\n", sz);
+      INI_File{gdbfc._local_config_path}.replace_section("[ui_size]\n", sz);
    }
 }
 
@@ -8175,8 +8177,8 @@ void Context::read_window_size(const fs::path& local_config_path) const {
    for (auto parse_res : config_view) {
       auto [section, key, value] = parse_res;
       if (section == "ui_size") {
-         parse_res.parse_int("window_width", gfc._window_width) ||
-            parse_res.parse_int("window_height", gfc._window_height);
+         parse_res.parse_int("window_width", gdbfc._window_width) ||
+            parse_res.parse_int("window_height", gdbfc._window_height);
       }
    }
 }
@@ -8276,22 +8278,22 @@ ExeStartInfo Context::emplace_gdb_args_from_command_line(int argc, char** argv) 
    return esi;
 }
 
-unique_ptr<UI> Context::gf_main(int argc, char** argv) {
+unique_ptr<UI> Context::gdbf_main(int argc, char** argv) {
    if (argc == 2) {
       if ((0 == strcmp(argv[1], "-?") || 0 == strcmp(argv[1], "-h") || 0 == strcmp(argv[1], "--help"))) {
          std::print(std::cerr,
                     "Usage: {} [GDB args]\n\n"
                     "GDB args: Pass any GDB arguments here, they will be forwarded to GDB.\n\n"
-                    "For more information, view the README at https://github.com/greg7mdp/gf/blob/main/README.md.\n",
+                    "For more information, view the README at https://github.com/greg7mdp/gdbf/blob/main/README.md.\n",
                     argv[0]);
          return {};
       }
 
       if ((0 == strcmp(argv[1], "-v") || 0 == strcmp(argv[1], "--version"))) {
-#ifdef GF_VERSION_STRING
-         std::print(std::cout, "gf version {}\n", GF_VERSION_STRING);
+#ifdef GDBF_VERSION_STRING
+         std::print(std::cout, "gdbf version {}\n", GDBF_VERSION_STRING);
 #else
-         std::print(std::cout, "gf version {}", "unknown");
+         std::print(std::cout, "gdbf version {}", "unknown");
 #endif
          return {};
       }
@@ -8307,39 +8309,37 @@ unique_ptr<UI> Context::gf_main(int argc, char** argv) {
 
    // process command arguments and create updated version to pass to gdb
    // -------------------------------------------------------------------
-   gfc._exe = emplace_gdb_args_from_command_line(argc, argv);
+   gdbfc._exe = emplace_gdb_args_from_command_line(argc, argv);
 
    // load settings and initialize ui
    // -------------------------------
-   gfc.init();
+   gdbfc.init();
 
-   UIConfig ui_config = gfc.load_settings(true);
+   UIConfig ui_config = gdbfc.load_settings(true);
 
-   ui_config.default_font_size = gfc._interface_font_size;
+   ui_config.default_font_size = gdbfc._interface_font_size;
 
    auto ui = UI::initialise(ui_config); // sets `ui.default_font_path`
-   _ui = ui.get();
-
-   // ui->_theme = uiThemeDark; // force it for now, overriding `gf2_config.ini` - should remove though!
+   _ui     = ui.get();
 
    // create font for interface
    // -------------------------
    const auto& font_path = ui->default_font_path();
-   ui->create_font(font_path, gfc._interface_font_size)->activate();
+   ui->create_font(font_path, gdbfc._interface_font_size)->activate();
 
-   if (gfc._window_width == -1 || gfc._window_height == -1) {
+   if (gdbfc._window_width == -1 || gdbfc._window_height == -1) {
       auto dims  = ui->screen_size();
       auto ratio = (float)dims.x / dims.y;
       if (ratio > 2.5f)
          dims.x /= 2; // superwide or two screens
-      gfc._window_width  = (int)((float)dims.x * 0.78f);
-      gfc._window_height = (int)((float)dims.y * 0.78f);
+      gdbfc._window_width  = (int)((float)dims.x * 0.78f);
+      gdbfc._window_height = (int)((float)dims.y * 0.78f);
    }
-   read_window_size(gfc._local_config_path);
-   _main_window =
-      &(ui->create_window(0, gfc._maximize ? UIWindow::MAXIMIZE : 0, "gf", gfc._window_width, gfc._window_height)
-           .set_scale(gfc._ui_scale)
-           .set_user_proc(MainWindowMessageProc));
+   read_window_size(gdbfc._local_config_path);
+   _main_window = &(
+      ui->create_window(0, gdbfc._maximize ? UIWindow::MAXIMIZE : 0, "gdbf", gdbfc._window_width, gdbfc._window_height)
+         .set_scale(gdbfc._ui_scale)
+         .set_user_proc(MainWindowMessageProc));
 
    for (const auto& ic : _interface_commands) {
       if (!(int)ic._shortcut.code)
@@ -8347,10 +8347,11 @@ unique_ptr<UI> Context::gf_main(int argc, char** argv) {
       _main_window->register_shortcut(ic._shortcut);
    }
 
-   _main_switcher = &_main_window->add_switcher(0);
-   auto saved_layout_string = read_layout(gfc._local_config_path);
-   //std::print("saved_layout_string={}\n", saved_layout_string);
-   const char* layout_string_current = saved_layout_string.empty() ? gfc._layout_string.c_str() : saved_layout_string.c_str();
+   _main_switcher           = &_main_window->add_switcher(0);
+   auto saved_layout_string = read_layout(gdbfc._local_config_path);
+   // std::print("saved_layout_string={}\n", saved_layout_string);
+   const char* layout_string_current =
+      saved_layout_string.empty() ? gdbfc._layout_string.c_str() : saved_layout_string.c_str();
    create_layout(&_main_switcher->add_panel(UIPanel::EXPAND), layout_string_current);
    _main_switcher->switch_to(_main_switcher->_children[0]);
 
@@ -8360,7 +8361,7 @@ unique_ptr<UI> Context::gf_main(int argc, char** argv) {
 
    additional_setup();
 
-   ui_config = gfc.load_settings(false);
+   ui_config = gdbfc.load_settings(false);
    if (ui_config._has_theme)
       ui->theme() = ui_config._theme;
 
@@ -8372,8 +8373,8 @@ unique_ptr<UI> Context::gf_main(int argc, char** argv) {
    if (is_executable_in_path(_clangd_path)) {
       // Start clangd for code navigation
       // ---------------------------------
-      auto root_dir =
-         gfc._current_directory.empty() ? std::filesystem::current_path().native() : gfc._current_directory.native();
+      auto root_dir = gdbfc._current_directory.empty() ? std::filesystem::current_path().native()
+                                                       : gdbfc._current_directory.native();
       _clangd.start(
          root_dir, _clangd_path,
          // Response callback

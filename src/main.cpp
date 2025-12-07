@@ -4,13 +4,13 @@
 // define global variables here so gf.cpp can be dynamically reloaded with jet-live
 //           -- all are singletons --
 // --------------------------------------------------------------------------------
-GF_Config     gfc;
+GDBF_Config   gdbfc;
 Context       ctx;
 BreakpointMgr s_breakpoint_mgr;
 
 // --------------------------------------------------------------------------------
 int main(int argc, char** argv) {
-   auto ui_ptr = ctx.gf_main(argc, argv);
+   auto ui_ptr = ctx.gdbf_main(argc, argv);
    if (!ui_ptr)
       return 1;
 

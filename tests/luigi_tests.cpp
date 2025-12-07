@@ -26,20 +26,19 @@ TEST_CASE(".ini file reading") {
    )";
 
    INI_Parser ini_file(ini_str);
-   
-   auto ui  = ini_file | views::filter([](auto &t) { return t._section == "ui" && !t._key.empty(); });
-   CHECK(rng::count_if(ui, [](auto &) { return true; }) == 1);
 
-   auto shortcuts  = ini_file | views::filter([](auto &t) { return t._section == "shortcuts" && !t._key.empty(); });
-   CHECK(rng::count_if(shortcuts, [](auto &) { return true; }) == 3);
+   auto ui = ini_file | views::filter([](auto& t) { return t._section == "ui" && !t._key.empty(); });
+   CHECK(rng::count_if(ui, [](auto&) { return true; }) == 1);
 
-   auto first_command =  rng::find_if(ini_file, [](auto &t) { return t._section == "commands" && !t._key.empty(); });
+   auto shortcuts = ini_file | views::filter([](auto& t) { return t._section == "shortcuts" && !t._key.empty(); });
+   CHECK(rng::count_if(shortcuts, [](auto&) { return true; }) == 3);
+
+   auto first_command = rng::find_if(ini_file, [](auto& t) { return t._section == "commands" && !t._key.empty(); });
    CHECK(first_command != rng::end(ini_file));
    auto [section, key, value] = *first_command;
    CHECK(section == "commands");
    CHECK(key == "Set breakpoint");
    CHECK(value == "b mem_visualizer.cpp:118");
-
 }
 
 TEST_CASE("INI_File::insert_in_section - duplicate removal bug") {
@@ -57,20 +56,20 @@ TEST_CASE("INI_File::insert_in_section - duplicate removal bug") {
          std::ofstream ofs(test_file);
          ofs << "[program]\n"
              << "./examples/calc\n"
-             << "./gf\n"
-             << "./examples/gf_testprog\n"
+             << "./gdbf\n"
+             << "./examples/gdbf_testprog\n"
              << "\n"
              << "[ui_layout]\n"
              << "layout1\n"
              << "layout2\n";
       }
 
-      // Insert "./gf\n" at the beginning (it already exists, so should just move it)
-      INI_File{test_file}.insert_in_section("[program]\n", "./gf\n", 0);
+      // Insert "./gdbf\n" at the beginning (it already exists, so should just move it)
+      INI_File{test_file}.insert_in_section("[program]\n", "./gdbf\n", 0);
 
       // Read the result
       std::ifstream ifs(test_file);
-      std::string result((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+      std::string   result((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 
       // Verify the structure
       CHECK(result.find("[program]\n") != std::string::npos);
@@ -78,7 +77,7 @@ TEST_CASE("INI_File::insert_in_section - duplicate removal bug") {
 
       // Count how many times [ui_layout] appears - should be exactly once
       size_t count = 0;
-      size_t pos = 0;
+      size_t pos   = 0;
       while ((pos = result.find("[ui_layout]", pos)) != std::string::npos) {
          count++;
          pos += 11; // length of "[ui_layout]"
@@ -89,11 +88,11 @@ TEST_CASE("INI_File::insert_in_section - duplicate removal bug") {
       CHECK(std::count(result.begin(), result.end(), '1') == 1);
       CHECK(std::count(result.begin(), result.end(), '2') == 1);
 
-      // Verify ./gf is at the beginning of [program] section
+      // Verify ./gdbf is at the beginning of [program] section
       size_t program_pos = result.find("[program]\n");
-      size_t gf_pos = result.find("./gf\n", program_pos);
-      size_t calc_pos = result.find("./examples/calc\n", program_pos);
-      CHECK(gf_pos < calc_pos); // ./gf should come before ./examples/calc
+      size_t gdbf_pos    = result.find("./gdbf\n", program_pos);
+      size_t calc_pos    = result.find("./examples/calc\n", program_pos);
+      CHECK(gdbf_pos < calc_pos); // ./gdbf should come before ./examples/calc
    }
 
    SUBCASE("Removing duplicate from middle of section") {
@@ -115,11 +114,11 @@ TEST_CASE("INI_File::insert_in_section - duplicate removal bug") {
 
       // Read the result
       std::ifstream ifs(test_file);
-      std::string result((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+      std::string   result((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 
       // Verify [other] section appears exactly once
       size_t count = 0;
-      size_t pos = 0;
+      size_t pos   = 0;
       while ((pos = result.find("[other]", pos)) != std::string::npos) {
          count++;
          pos += 7;
@@ -129,15 +128,15 @@ TEST_CASE("INI_File::insert_in_section - duplicate removal bug") {
       // Verify content1 and content2 appear exactly once
       CHECK(result.find("content1") != std::string::npos);
       CHECK(result.find("content2") != std::string::npos);
-      size_t first_content1 = result.find("content1");
+      size_t first_content1  = result.find("content1");
       size_t second_content1 = result.find("content1", first_content1 + 8);
       CHECK(second_content1 == std::string::npos); // Should not find it again
 
       // Verify order in [program] section: middle, first, last
       size_t program_pos = result.find("[program]\n");
-      size_t middle_pos = result.find("./middle\n", program_pos);
-      size_t first_pos = result.find("./first\n", program_pos);
-      size_t last_pos = result.find("./last\n", program_pos);
+      size_t middle_pos  = result.find("./middle\n", program_pos);
+      size_t first_pos   = result.find("./first\n", program_pos);
+      size_t last_pos    = result.find("./last\n", program_pos);
       CHECK(middle_pos < first_pos);
       CHECK(first_pos < last_pos);
    }
@@ -158,11 +157,11 @@ TEST_CASE("INI_File::insert_in_section - duplicate removal bug") {
 
       // Read the result
       std::ifstream ifs(test_file);
-      std::string result((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+      std::string   result((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 
       // Verify [settings] section appears exactly once
       size_t count = 0;
-      size_t pos = 0;
+      size_t pos   = 0;
       while ((pos = result.find("[settings]", pos)) != std::string::npos) {
          count++;
          pos += 10;
@@ -194,11 +193,11 @@ TEST_CASE("INI_File::insert_in_section - duplicate removal bug") {
 
       // Read the result
       std::ifstream ifs(test_file);
-      std::string result((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+      std::string   result((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 
       // Count [ui_layout] sections - should still be exactly one
       size_t count = 0;
-      size_t pos = 0;
+      size_t pos   = 0;
       while ((pos = result.find("[ui_layout]", pos)) != std::string::npos) {
          count++;
          pos += 11;
@@ -207,7 +206,7 @@ TEST_CASE("INI_File::insert_in_section - duplicate removal bug") {
 
       // Verify layout_line appears exactly once
       count = 0;
-      pos = 0;
+      pos   = 0;
       while ((pos = result.find("layout_line", pos)) != std::string::npos) {
          count++;
          pos += 11;

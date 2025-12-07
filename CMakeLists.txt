@@ -10,16 +10,16 @@
 cmake_minimum_required(VERSION 3.24...4.0)
 
 # Extract version from gf.hpp
-file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/src/gf.hpp" GF_VERSION_MAJOR_LINE REGEX "^#define GF_VERSION_MAJOR ")
-file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/src/gf.hpp" GF_VERSION_MINOR_LINE REGEX "^#define GF_VERSION_MINOR ")
-file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/src/gf.hpp" GF_VERSION_PATCH_LINE REGEX "^#define GF_VERSION_PATCH ")
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/src/gf.hpp" GDBF_VERSION_MAJOR_LINE REGEX "^#define GDBF_VERSION_MAJOR ")
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/src/gf.hpp" GDBF_VERSION_MINOR_LINE REGEX "^#define GDBF_VERSION_MINOR ")
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/src/gf.hpp" GDBF_VERSION_PATCH_LINE REGEX "^#define GDBF_VERSION_PATCH ")
 
-string(REGEX REPLACE "^#define GF_VERSION_MAJOR[ \t]+([0-9]+).*$" "\\1" GF_VERSION_MAJOR "${GF_VERSION_MAJOR_LINE}")
-string(REGEX REPLACE "^#define GF_VERSION_MINOR[ \t]+([0-9]+).*$" "\\1" GF_VERSION_MINOR "${GF_VERSION_MINOR_LINE}")
-string(REGEX REPLACE "^#define GF_VERSION_PATCH[ \t]+([0-9]+).*$" "\\1" GF_VERSION_PATCH "${GF_VERSION_PATCH_LINE}")
-set(DETECTED_GF_VERSION "${GF_VERSION_MAJOR}.${GF_VERSION_MINOR}.${GF_VERSION_PATCH}")
+string(REGEX REPLACE "^#define GDBF_VERSION_MAJOR[ \t]+([0-9]+).*$" "\\1" GDBF_VERSION_MAJOR "${GDBF_VERSION_MAJOR_LINE}")
+string(REGEX REPLACE "^#define GDBF_VERSION_MINOR[ \t]+([0-9]+).*$" "\\1" GDBF_VERSION_MINOR "${GDBF_VERSION_MINOR_LINE}")
+string(REGEX REPLACE "^#define GDBF_VERSION_PATCH[ \t]+([0-9]+).*$" "\\1" GDBF_VERSION_PATCH "${GDBF_VERSION_PATCH_LINE}")
+set(DETECTED_GDBF_VERSION "${GDBF_VERSION_MAJOR}.${GDBF_VERSION_MINOR}.${GDBF_VERSION_PATCH}")
 
-project(gf VERSION ${DETECTED_GF_VERSION} LANGUAGES CXX)
+project(gdbf VERSION ${DETECTED_GDBF_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -71,7 +71,7 @@ if (NOT MSVC)
 endif()
 
 ## ------------------------------------------------------------------------------------
-##                                    gf
+##                                    gdbf
 ## ------------------------------------------------------------------------------------
 if (NOT MSVC)
     add_executable(${PROJECT_NAME} WIN32 src/gf.cpp src/main.cpp src/re/cpp.cpp src/re/gdb.cpp)
@@ -80,7 +80,7 @@ if (NOT MSVC)
 
     target_include_directories(${PROJECT_NAME} PRIVATE src deps/include )
     target_link_libraries(${PROJECT_NAME} luigi Threads::Threads)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE GF_VERSION_STRING="${PROJECT_VERSION}")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE GDBF_VERSION_STRING="${PROJECT_VERSION}")
 endif ()
 
 

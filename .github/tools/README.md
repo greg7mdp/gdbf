@@ -1,6 +1,6 @@
-# gf Build Tools
+# gdbf Build Tools
 
-This directory contains tools for building reproducible gf binaries.
+This directory contains tools for building reproducible gdbf binaries.
 
 ## Reproducible Builds
 
@@ -25,7 +25,7 @@ To build a reproducible binary locally:
 ./.github/tools/build-reproducible.sh [output-dir]
 ```
 
-The binary will be created in the output directory (default: `build-reproducible/gf`).
+The binary will be created in the output directory (default: `build-reproducible/gdbf`).
 
 ### Requirements
 
@@ -37,7 +37,7 @@ The binary will be created in the output directory (default: `build-reproducible
 The reproducible build runs automatically when a new release is published on GitHub. The workflow:
 
 1. Builds the binary using the reproducible Dockerfile
-2. Creates a tarball with version name (e.g., `gf-v1.0.0-linux-x86_64.tar.gz`)
+2. Creates a tarball with version name (e.g., `gdbf-v1.0.0-linux-x86_64.tar.gz`)
 3. Generates SHA256 checksum
 4. Uploads the binary and checksum to the GitHub release
 
@@ -55,11 +55,11 @@ After building, verify the binary works:
 
 ```bash
 # Check binary information
-file build-reproducible/gf
-ldd build-reproducible/gf
+file build-reproducible/gdbf
+ldd build-reproducible/gdbf
 
 # Run the binary
-./build-reproducible/gf --help
+./build-reproducible/gdbf --help
 ```
 
 ### Portability
@@ -107,7 +107,7 @@ To verify reproducibility, build twice and compare:
 ```bash
 ./.github/tools/build-reproducible.sh output1
 ./.github/tools/build-reproducible.sh output2
-sha256sum output1/gf output2/gf
+sha256sum output1/gdbf output2/gdbf
 ```
 
 The hashes should be identical.

@@ -1,8 +1,8 @@
 #pragma once
 
-#define GF_VERSION_MAJOR 0
-#define GF_VERSION_MINOR 8
-#define GF_VERSION_PATCH 2
+#define GDBF_VERSION_MAJOR 0
+#define GDBF_VERSION_MINOR 8
+#define GDBF_VERSION_PATCH 2
 
 #include <algorithm>
 #include <cassert>
@@ -215,7 +215,7 @@ private:
    bool       _should_ask{false};
 
 public:
-   size_t _current_path_index = 0; // current index of `_path` in <prog>.ini in .gf
+   size_t _current_path_index = 0; // current index of `_path` in <prog>.ini in .gdbf
    size_t _current_arg_index  = 0; // current index of `_arguments` in `get_prog_config_path()`
 
    static UIElement* Create(UIElement* parent);
@@ -375,9 +375,9 @@ struct Command {
 };
 
 // --------------------------------------------------------------------------------------------
-//                      Config (mostly read from `gf2_config.ini` file)
+//                      Config (mostly read from `gdbf_config.ini` file)
 // --------------------------------------------------------------------------------------------
-struct GF_Config {
+struct GDBF_Config {
    std::string _layout_string = "v(75,h(50,Source,v(50,t(Exe,Breakpoints,Commands,Struct),t(Stack,Files,Thread,"
                                 "CmdSearch))),h(40,Console,t(Watch,Locals,Registers,Data,Log,Prof,Memory,View)))";
 
@@ -393,10 +393,10 @@ struct GF_Config {
    std::string                   _vim_server_name;
    std::string                   _log_pipe_path;
    std::vector<Command>          _preset_commands;
-   fs::path _global_config_path; // ~/.config/gf_config.ini or ~/.config/gf2_config.ini (main config file)
+   fs::path _global_config_path; // ~/.config/gdbf_config.ini or ~/.config/gf2_config.ini (main config file)
    fs::path _current_directory;  // <cwd>
-   fs::path _local_config_dir;   // <path>/.gf where <path> is `cwd` dir or the one above<cwd>
-   fs::path _local_config_path;  // <path>/.gf/gf_config.ini (stores overrides to `gf_config.ini`?)
+   fs::path _local_config_dir;   // <path>/.gdbf where <path> is `cwd` dir or the one above<cwd>
+   fs::path _local_config_path;  // <path>/.gdbf/gdbf_config.ini (stores overrides to `gdbf_config.ini`?)
    int      _code_font_size           = 13;
    int      _interface_font_size      = 11;
    int      _window_width             = -1;
@@ -428,32 +428,32 @@ struct GF_Config {
       if (_local_config_dir.filename().native().starts_with("build"))
          _local_config_dir = _local_config_dir.parent_path();
 
-      // `.gf` is the directory holding the local config files
+      // `.gdbf` is the directory holding the local config files
       // -----------------------------------------------------
-      _local_config_dir.append(".gf");
+      _local_config_dir.append(".gdbf");
       fs::create_directories(_local_config_dir); // create directory if it doesn't exist
 
-      _global_config_path = std::format("{}/.config/gf_config.ini", getenv("HOME"));
+      _global_config_path = std::format("{}/.config/gdbf_config.ini", getenv("HOME"));
       if (!fs::exists(_global_config_path)) {
-         // if `gf_config.ini` not present, also accept `gf2_config.ini`
+         // if `gdbf_config.ini` not present, also accept `gf2_config.ini`
          _global_config_path = std::format("{}/.config/gf2_config.ini", getenv("HOME"));
       }
 
-      _local_config_path = std::format("{}/gf_config.ini", _local_config_dir.native());
+      _local_config_path = std::format("{}/gdbf_config.ini", _local_config_dir.native());
    }
 
 private:
-   // return <path>/.gf/<progname>.<extension> where path is `cwd` dir where `gf` was launched,
+   // return <path>/.gdbf/<progname>.<extension> where path is `cwd` dir where `gdbf` was launched,
    // or the one above
    fs::path get_prog_path(std::string_view extension);
 
 public:
    const fs::path& get_local_config_dir() { return _local_config_dir; }
 
-   // <path>/.gf/<progname>.ini
+   // <path>/.gdbf/<progname>.ini
    fs::path get_prog_config_path() { return get_prog_path(".ini"); }
 
-   // <path>/.gf/<progname>.hist
+   // <path>/.gdbf/<progname>.hist
    fs::path get_command_history_path() { return get_prog_path(".hist"); }
 
    std::vector<fs::path> get_progs() {
@@ -464,7 +464,7 @@ public:
       for (const auto& entry : fs::directory_iterator(path)) {
          std::filesystem::path p = entry.path();
          if (std::filesystem::is_regular_file(p)) {
-            if (p.filename() == "gf_config.ini")
+            if (p.filename() == "gdbf_config.ini")
                continue; // skip local config file
 
             if (p.extension() == ".ini")
@@ -639,7 +639,7 @@ struct Context {
    UIElement*     find_window(std::string_view name);
    void           emplace_gdb_args_from_ini_file(std::string_view val);
    ExeStartInfo   emplace_gdb_args_from_command_line(int argc, char** argv);
-   unique_ptr<UI> gf_main(int argc, char** argv);
+   unique_ptr<UI> gdbf_main(int argc, char** argv);
 };
 
 // --------------------------------------------------------------------------------------------
