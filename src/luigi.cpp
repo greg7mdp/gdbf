@@ -5626,7 +5626,8 @@ UIMenu& UIMenu::show() {
 
    struct Hints hints = {0};
    hints.flags        = 2;
-   XChangeProperty(dpy, _window->_xwindow, properties[2], properties[2], 32, PropModeReplace, (uint8_t*)&hints, 5);
+   if (properties[2] != None)
+       XChangeProperty(dpy, _window->_xwindow, properties[2], properties[2], 32, PropModeReplace, (uint8_t*)&hints, 5);
 
    XMapWindow(dpy, _window->_xwindow);
    XMoveResizeWindow(dpy, _window->_xwindow, _point.x, _point.y, width, height);

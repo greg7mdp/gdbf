@@ -42,7 +42,7 @@ gdbf is a lightweight and full featured GDB frontend for Linux.
   - `Ctrl+Click` a line → run until that line
   - `Shift+Click` a line → skip to it without executing
   - Double-click → select expression for inspection
-- **clangd code navigarion** - Navigate to function or variable definition and back
+- **clangd code navigation** - Navigate to function or variable definition and back
 - **Keyboard Shortcuts** - Full keyboard navigation (F5-F11, Ctrl+shortcuts)
 - **Tab Completion** - Auto-complete GDB commands and symbols
 - **Custom Commands** - Define preset command sequences
