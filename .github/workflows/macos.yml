@@ -10,7 +10,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-14, macos-15]  # macos-14 = M1, macos-15 = M2/M3
+        os: [macos-latest, macos-15]  # macos-14 = M1, macos-15 = M2/M3
         compiler: [clang++]
         build_type: [Release]
         standard: [23]
